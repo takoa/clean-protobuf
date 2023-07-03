@@ -1,0 +1,12 @@
+builds:
+- id: grpc-server
+  dir: .
+  main: ./cmd/server/
+  flags:
+  - -tags
+  - netgo
+  - -trimpath
+  ldflags:
+  - -s -w
+  - -extldflags "-static"
+  - -X main.version={{.Env.SERVER_VERSION}}
