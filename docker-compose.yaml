@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  grpc-server:
+    image: "ko.local/server:latest"
+    ports:
+      - "50051:50051"
+    environment:
+      - "DATA_FILE_PATH=/assets/data.json"
+    volumes:
+      - "./assets:/assets"
