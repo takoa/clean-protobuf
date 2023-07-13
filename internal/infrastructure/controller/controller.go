@@ -22,7 +22,7 @@ func NewServer(repositories *repository.Repositories) (*RouteGuideServer, error)
 	}
 	return &RouteGuideServer{
 		featureFinder:      feature.NewFeatureFinder(repositories.Features),
-		routeMessagePoster: route.NewRouteMessagePoster(repositories.Messages),
+		routeMessagePoster: route.NewRouteMessagePoster(repositories.Features, repositories.Messages),
 		routeRecorder:      route.NewRouteInformationGetter(repositories.Features),
 	}, nil
 }

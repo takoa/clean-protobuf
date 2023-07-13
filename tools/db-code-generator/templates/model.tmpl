@@ -1,0 +1,9 @@
+package {{.PackageName}}
+
+import (
+	"{{.GORMModelPackage.FullName}}"
+)
+
+type {{.StructName}} struct {
+	{{.GORMModelPackage.ShortName}}.{{.StructName}}
+}

@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/takoa/clean-protobuf/api"
+	"github.com/takoa/clean-protobuf/internal/entity/errors"
 	"github.com/takoa/clean-protobuf/internal/entity/model"
 	"github.com/takoa/clean-protobuf/internal/infrastructure/controller/grpc"
+	"golang.org/x/xerrors"
 )
 
 // RecordRoute records a route composited of a sequence of points.
@@ -16,7 +18,7 @@ import (
 // total time spent.
 func (s *RouteGuideServer) RecordRoute(stream api.RouteGuide_RecordRouteServer) error {
 	var pointCount, featureCount, distance int32
-	var previousPoint *model.Point
+	var previousPoint model.Point
 	startTime := time.Now()
 
 	for loops := true; loops; {
@@ -33,7 +35,11 @@ func (s *RouteGuideServer) RecordRoute(stream api.RouteGuide_RecordRouteServer) 
 			})
 		}
 
-		onPointAdded := func(p *model.Point, matchedFeature *model.Feature, addedDistance int32) error {
+		p, err := grpc.ToModelPoint(point)
+		if err != nil {
+			return xerrors.Errorf("point: %w", errors.ErrNilArgument)
+		}
+		onPointAdded := func(p model.Point, matchedFeature *model.Feature, addedDistance int32) error {
 			pointCount++
 			if matchedFeature != nil {
 				featureCount++
@@ -46,7 +52,7 @@ func (s *RouteGuideServer) RecordRoute(stream api.RouteGuide_RecordRouteServer) 
 		if err := s.routeRecorder.GetInformation(
 			stream.Context(),
 			previousPoint,
-			grpc.ToModelPoint(point),
+			p,
 			onPointAdded,
 		); err != nil {
 			return err
@@ -68,6 +74,10 @@ func (s *RouteGuideServer) RouteChat(stream api.RouteGuide_RouteChatServer) erro
 			return err
 		}
 
+		p, err := grpc.ToModelPoint(in.Location)
+		if err != nil {
+			return xerrors.Errorf("point: %w", errors.ErrNilArgument)
+		}
 		onPostedRouteMessage := func(message string) error {
 			if err := stream.Send(&api.RouteNote{Location: in.Location, Message: message}); err != nil {
 				return err
@@ -76,7 +86,7 @@ func (s *RouteGuideServer) RouteChat(stream api.RouteGuide_RouteChatServer) erro
 		}
 		if err := s.routeMessagePoster.PostMessage(
 			stream.Context(),
-			grpc.ToModelPoint(in.Location),
+			p,
 			in.Message,
 			onPostedRouteMessage,
 		); err != nil {

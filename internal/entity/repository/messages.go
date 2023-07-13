@@ -7,6 +7,7 @@ import (
 )
 
 type Messages interface {
-	Find(ctx context.Context, p *model.Point) ([]string, error)
-	Create(ctx context.Context, p *model.Point, message string) error
+	Repository[model.Message]
+
+	FindByFeature(ctx context.Context, f *model.Feature, orderBy string) (result []*model.Message, err error)
 }
