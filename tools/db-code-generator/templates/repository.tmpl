@@ -1,0 +1,36 @@
+{{- define "interface" -}}
+{{- $modelType := printf "%s.%s" .Model.Package.ShortName .Model.Name -}}
+package {{.InterfacePackageName}}
+
+import (
+	"{{.Model.Package.FullName}}"
+)
+
+type {{.InterfaceName}} interface {
+	Repository[{{$modelType}}]
+}
+{{end}}
+
+{{- define "implementation" -}}
+{{- $modelType := printf "%s.%s" .Model.Package.ShortName .Model.Name -}}
+package {{.ImplementationPackageName}}
+
+import (
+	"gorm.io/gorm"
+	"{{.Model.Package.FullName}}"
+)
+
+type {{.ImplementationName}} struct {
+	Repository[{{$modelType}}]
+}
+
+func New{{.ImplementationName}}(
+	db *gorm.DB,
+) *{{.ImplementationName}} {
+	return &{{.ImplementationName}}{
+		Repository: Repository[{{$modelType}}]{
+			DB: db,
+		},
+	}
+}
+{{end}}

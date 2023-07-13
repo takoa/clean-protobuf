@@ -7,5 +7,7 @@ import (
 )
 
 type Features interface {
-	Find(ctx context.Context) ([]*model.Feature, error)
+	Repository[model.Feature]
+
+	FindByPoint(ctx context.Context, p model.Point) (result *model.Feature, err error)
 }

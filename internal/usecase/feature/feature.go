@@ -5,7 +5,6 @@ import (
 
 	"github.com/takoa/clean-protobuf/internal/entity/model"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
-	"golang.org/x/xerrors"
 )
 
 // Finder is an interface for finding a feature.
@@ -14,7 +13,7 @@ type Finder interface {
 	// If rect points to an exact point, it looks for the exact match.
 	Find(
 		ctx context.Context,
-		rect *model.Rectangle,
+		rect model.Rectangle,
 		onFeatureFound OnFeatureFound,
 	) error
 }
@@ -33,14 +32,10 @@ func NewFeatureFinder(features repository.Features) *FeatureFinder {
 
 func (f *FeatureFinder) Find(
 	ctx context.Context,
-	rect *model.Rectangle,
+	rect model.Rectangle,
 	onFeatureFound OnFeatureFound,
 ) error {
-	if rect == nil {
-		return xerrors.New("rect is nil")
-	}
-
-	features, err := f.features.Find(ctx)
+	features, _, err := f.features.Find(ctx, -1, -1, "")
 	if err != nil {
 		return err
 	}
@@ -49,7 +44,8 @@ func (f *FeatureFinder) Find(
 		// If rect points to an exact point, treat it as Point and look for the exact match.
 		point := rect.Hi
 		for _, feature := range features {
-			if point.Equals(feature.Location) {
+			featurePoint := model.Point{Latitude: feature.Latitude, Longitude: feature.Longitude}
+			if point.Equals(featurePoint) {
 				if err := onFeatureFound(feature); err != nil {
 					return err
 				}
@@ -58,7 +54,8 @@ func (f *FeatureFinder) Find(
 	} else {
 		// If not, look for all features within the area.
 		for _, feature := range features {
-			if feature.Location != nil && feature.Location.In(rect) {
+			featurePoint := model.Point{Latitude: feature.Latitude, Longitude: feature.Longitude}
+			if featurePoint.In(rect) {
 				if err := onFeatureFound(feature); err != nil {
 					return err
 				}

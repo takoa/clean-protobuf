@@ -2,45 +2,36 @@ package repository
 
 import (
 	"context"
-	"sync"
 
 	"github.com/takoa/clean-protobuf/internal/entity/model"
+	"gorm.io/gorm"
 )
 
 type Messages struct {
-	mu              sync.Mutex
-	pointMessageMap map[string][]string
+	Repository[model.Message]
 }
 
-func NewMessages() *Messages {
+func NewMessages(
+	db *gorm.DB,
+) *Messages {
 	return &Messages{
-		pointMessageMap: make(map[string][]string),
+		Repository: Repository[model.Message]{
+			DB: db,
+		},
 	}
 }
 
-func (r *Messages) Find(ctx context.Context, p *model.Point) ([]string, error) {
-	key := ""
-	if p != nil {
-		key = p.Serialize()
+func (r *Messages) FindByFeature(ctx context.Context, f *model.Feature, orderBy string) (result []*model.Message, err error) {
+	if f == nil {
+		return nil, nil
 	}
 
-	r.mu.Lock()
-	messages := make([]string, len(r.pointMessageMap[key]))
-	copy(messages, r.pointMessageMap[key])
-	r.mu.Unlock()
-
-	return messages, nil
-}
-
-func (r *Messages) Create(ctx context.Context, p *model.Point, message string) error {
-	key := ""
-	if p != nil {
-		key = p.Serialize()
+	tx := r.DB.WithContext(ctx).
+		Where("feature_id = ?", f.ID).
+		Order(orderBy).
+		Find(&result)
+	if tx.Error != nil {
+		return nil, tx.Error
 	}
-
-	r.mu.Lock()
-	r.pointMessageMap[key] = append(r.pointMessageMap[key], message)
-	r.mu.Unlock()
-
-	return nil
+	return
 }

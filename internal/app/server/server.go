@@ -23,22 +23,21 @@
 package server
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net"
-	"os"
 
+	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/config"
-	"github.com/takoa/clean-protobuf/internal/entity/model"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
 	"github.com/takoa/clean-protobuf/internal/infrastructure/controller"
-
 	repositoryimpl "github.com/takoa/clean-protobuf/internal/infrastructure/repository"
 )
 
@@ -47,12 +46,17 @@ func Serve() error {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.Port))
 	if err != nil {
-		return fmt.Errorf("failed to listen %w", err)
+		return xerrors.Errorf("failed to listen: %w", err)
 	}
 
-	server, err := controller.NewServer(newRepositories())
+	repositories, err := newRepositories()
 	if err != nil {
-		return fmt.Errorf("failed to initialize the server: %w", err)
+		return xerrors.Errorf("failed to create repositories: %w", err)
+	}
+
+	server, err := controller.NewServer(repositories)
+	if err != nil {
+		return xerrors.Errorf("failed to initialize the server: %w", err)
 	}
 
 	var opts []grpc.ServerOption
@@ -76,26 +80,31 @@ func Serve() error {
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
-		return fmt.Errorf("failed to serve: %w", err)
+		return xerrors.Errorf("failed to serve: %w", err)
 	}
 
 	return nil
 }
 
-// newRepositories initialize repositories with JSON data.
-func newRepositories() *repository.Repositories {
-	data, err := os.ReadFile(config.Server.DataFilePath)
-	if err != nil {
-		log.Fatalf("Failed to load the provided feature data file: %+v", err)
-	}
+func newRepositories() (*repository.Repositories, error) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+		config.DB.Host,
+		config.DB.Port,
+		config.DB.User,
+		config.DB.Password,
+		config.DB.Name,
+		config.DB.SSLMode,
+		config.DB.TimeZone,
+	)
 
-	var features []*model.Feature
-	if err := json.Unmarshal(data, &features); err != nil {
-		log.Fatalf("Failed to load default features: %+v", err)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, xerrors.Errorf("failed to connect to the DB: %w", err)
 	}
 
 	return &repository.Repositories{
-		Features: repositoryimpl.NewFeatures(features),
-		Messages: repositoryimpl.NewMessages(),
-	}
+		Features: repositoryimpl.NewFeatures(db),
+		Messages: repositoryimpl.NewMessages(db),
+	}, nil
 }

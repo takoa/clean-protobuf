@@ -4,21 +4,29 @@ import (
 	"context"
 
 	"github.com/takoa/clean-protobuf/internal/entity/model"
+	"gorm.io/gorm"
 )
 
 type Features struct {
-	features []*model.Feature
+	Repository[model.Feature]
 }
 
-func NewFeatures(features []*model.Feature) *Features {
+func NewFeatures(
+	db *gorm.DB,
+) *Features {
 	return &Features{
-		features: features,
+		Repository: Repository[model.Feature]{
+			DB: db,
+		},
 	}
 }
 
-func (r *Features) Find(ctx context.Context) ([]*model.Feature, error) {
-	s := make([]*model.Feature, len(r.features))
-	copy(s, r.features)
-
-	return s, nil
+func (r *Features) FindByPoint(ctx context.Context, p model.Point) (result *model.Feature, err error) {
+	tx := r.DB.WithContext(ctx).
+		Where("latitude = ? and longitude = ?", p.Latitude, p.Longitude).
+		First(&result)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return
 }
