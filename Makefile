@@ -31,10 +31,7 @@ create-certs:
 
 .PHONY: generate-server
 generate-server:
-	cd $(PROTOBUF_DIR)
-	protoc --go_out=. --go_opt=paths=source_relative \
-    	--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-    	$(PROTOBUF_FILE)
+	docker run --volume "./:/workspace" --workdir /workspace bufbuild/buf:1.24.0 generate $(PROTOBUF_DIR)
 
 .PHONY: generate-db-code
 generate-db-code:
