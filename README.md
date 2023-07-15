@@ -8,10 +8,19 @@ The architecture is influenced by https://github.com/evrone/go-clean-template, a
 
 ## Features
 - Clean architecture
-- Protocol Buffers & gRPC (including Streaming RPC)
-- PostgreSQL with migration
+- Protocol Buffers & gRPC
+    - Streaming RPC
+    - REST reverse-proxy
+- PostgreSQL
+    - Migration
 - Generics
-- A lot of code generation
+- Code generation
+    - gRPC servers ([protoc](https://github.com/protocolbuffers/protobuf))
+    - GORM models ([gorm.io/gen](gorm.io/gen))
+    - Initial user defined models (template)
+    - Repository interfaces (template)
+    - Initial repository implementation (template)
+    - OpenAPI v3 ([protoc-gen-openapi](https://github.com/google/gnostic/tree/main/cmd/protoc-gen-openapi))
 - Containers
 - De facto standard layout
 
@@ -85,7 +94,7 @@ Tools that can be configured and reused.
 ## Code Generation
 Code generation is used for:
 
-- gRPC server ([protoc](https://github.com/protocolbuffers/protobuf))
+- gRPC servers ([protoc](https://github.com/protocolbuffers/protobuf))
 - GORM models ([gorm.io/gen](gorm.io/gen))
 - initial user defined models (template)
 - repository interfaces (template)
