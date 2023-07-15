@@ -10,3 +10,14 @@ builds:
   - -s -w
   - -extldflags "-static"
   - -X main.version={{.Env.SERVER_VERSION}}
+- id: grpc-gateway
+  dir: .
+  main: ./cmd/gateway/
+  flags:
+  - -tags
+  - netgo
+  - -trimpath
+  ldflags:
+  - -s -w
+  - -extldflags "-static"
+  - -X main.version={{.Env.GATEWAY_VERSION}}

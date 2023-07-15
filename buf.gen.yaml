@@ -7,3 +7,9 @@ plugins:
     out: ./api
     opt:
       - paths=source_relative
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.16.0
+    out: ./api
+    opt:
+      - paths=source_relative
+  - plugin: openapi
+    out: ./api
