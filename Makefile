@@ -31,7 +31,7 @@ create-certs:
 
 .PHONY: generate-server
 generate-server:
-	docker run --volume "./:/workspace" --workdir /workspace bufbuild/buf:1.24.0 generate $(PROTOBUF_DIR)
+	docker run --rm --volume "./:/workspace" --workdir /workspace bufbuild/buf:1.24.0 generate $(PROTOBUF_DIR)
 
 .PHONY: generate-db-code
 generate-db-code:
