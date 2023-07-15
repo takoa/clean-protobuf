@@ -27,12 +27,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/config"
@@ -98,7 +100,15 @@ func newRepositories() (*repository.Repositories, error) {
 		config.DB.TimeZone,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	newLogger := logger.New(
+		log.New(os.Stdout, "\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Info,
+			Colorful:      true,
+		},
+	)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: newLogger})
 	if err != nil {
 		return nil, xerrors.Errorf("failed to connect to the DB: %w", err)
 	}
