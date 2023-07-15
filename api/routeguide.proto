@@ -14,9 +14,23 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/takoa/clean-protobuf/api";
-
 package routeguide;
+
+import "google/api/annotations.proto";
+import "gnostic/openapi/v3/annotations.proto";
+
+option go_package = "github.com/takoa/clean-protobuf/api";
+option (gnostic.openapi.v3.document) = {
+  info: {
+    title: "Route Guide Gateway";
+    version: "0.0.1";
+  }
+  servers: [
+    {
+      url: "http://localhost:8081";
+    }
+  ]
+};
 
 // Interface exported by the server.
 service RouteGuide {
@@ -26,7 +40,11 @@ service RouteGuide {
   //
   // A feature with an empty name is returned if there's no feature at the given
   // position.
-  rpc GetFeature(Point) returns (Feature) {}
+  rpc GetFeature(Point) returns (Feature) {
+    option (google.api.http) = {
+      get: "/v1/features/{latitude}/{longitude}"
+    };
+  }
 
   // A server-to-client streaming RPC.
   //
@@ -34,7 +52,11 @@ service RouteGuide {
   // streamed rather than returned at once (e.g. in a response message with a
   // repeated field), as the rectangle may cover a large area and contain a
   // huge number of features.
-  rpc ListFeatures(Rectangle) returns (stream Feature) {}
+  rpc ListFeatures(Rectangle) returns (stream Feature) {
+    option (google.api.http) = {
+      get: "/v1/features"
+    };
+  }
 
   // A client-to-server streaming RPC.
   //

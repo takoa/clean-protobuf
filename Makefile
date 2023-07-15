@@ -16,6 +16,8 @@ PROTOBUF_FILE = routeguide.proto
 KO_DOCKER_REPO = ko.local
 SERVER_PATH = ./cmd/server
 SERVER_VERSION = v0.0.1
+GATEWAY_PATH = ./cmd/gateway
+GATEWAY_VERSION = v0.0.1
 
 # Generation
 .PHONY: build-images
@@ -23,6 +25,8 @@ build-images:
 	export KO_DOCKER_REPO=$(KO_DOCKER_REPO)
 	export SERVER_VERSION=$(SERVER_VERSION)
 	ko build --base-import-paths $(SERVER_PATH)
+	export GATEWAY_VERSION=$(GATEWAY_VERSION)
+	ko build --base-import-paths $(GATEWAY_PATH)
 
 .PHONY: create-certs
 create-certs:
@@ -31,7 +35,8 @@ create-certs:
 
 .PHONY: generate-server
 generate-server:
-	docker run --rm --volume "./:/workspace" --workdir /workspace bufbuild/buf:1.24.0 generate $(PROTOBUF_DIR)
+	buf mod update $(PROTOBUF_DIR)
+	buf generate $(PROTOBUF_DIR)
 
 .PHONY: generate-db-code
 generate-db-code:
@@ -114,7 +119,10 @@ stop-database:
 	docker compose down
 
 # Tools
+# Installing Buf with `go install` isn't a recommended way, but it's easy and universal.
 .PHONY: install-tools
 install-tools:
 	go install github.com/google/ko@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	go install github.com/bufbuild/buf/cmd/buf@latest
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
