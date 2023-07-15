@@ -1,4 +1,11 @@
 version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/takoa/clean-protobuf/api
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/gnostic/gnostic
 plugins:
   - plugin: buf.build/protocolbuffers/go:v1.31.0
     out: ./api

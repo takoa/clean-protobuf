@@ -5,7 +5,6 @@ package routeguide;
 import "google/api/annotations.proto";
 import "gnostic/openapi/v3/annotations.proto";
 
-option go_package = "github.com/takoa/clean-protobuf/api";
 option (gnostic.openapi.v3.document) = {
   info: {
     title: "Route Guide Gateway";
