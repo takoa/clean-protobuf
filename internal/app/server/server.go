@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -41,6 +42,8 @@ import (
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
 	"github.com/takoa/clean-protobuf/internal/infrastructure/controller"
 	repositoryimpl "github.com/takoa/clean-protobuf/internal/infrastructure/repository"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 func Serve() error {
@@ -56,7 +59,10 @@ func Serve() error {
 		return xerrors.Errorf("failed to create repositories: %w", err)
 	}
 
-	server, err := controller.NewServer(repositories)
+	healthCheckServer := health.NewServer()
+	healthCheckServer.SetServingStatus("RouteGuide", grpc_health_v1.HealthCheckResponse_SERVING)
+
+	routeGuideServer, err := controller.NewServer(repositories)
 	if err != nil {
 		return xerrors.Errorf("failed to initialize the server: %w", err)
 	}
@@ -78,7 +84,8 @@ func Serve() error {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 	grpcServer := grpc.NewServer(opts...)
-	api.RegisterRouteGuideServer(grpcServer, server)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthCheckServer)
+	api.RegisterRouteGuideServer(grpcServer, routeGuideServer)
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
