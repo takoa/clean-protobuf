@@ -1,0 +1,1 @@
+LICENSE.md contains the licenses provided with the original code.
