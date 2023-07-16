@@ -1,4 +1,4 @@
-package grpc
+package converter
 
 import (
 	"github.com/takoa/clean-protobuf/api"

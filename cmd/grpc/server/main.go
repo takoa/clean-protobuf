@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/takoa/clean-protobuf/internal/app/server"
+	"github.com/takoa/clean-protobuf/internal/app/grpc/server"
 )
 
 func main() {

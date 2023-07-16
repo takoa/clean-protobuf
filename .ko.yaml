@@ -1,7 +1,7 @@
 builds:
-- id: grpc-server
+- id: connect-server
   dir: .
-  main: ./cmd/server/
+  main: ./cmd/connect/server/
   flags:
   - -tags
   - netgo
@@ -9,10 +9,21 @@ builds:
   ldflags:
   - -s -w
   - -extldflags "-static"
-  - -X main.version={{.Env.SERVER_VERSION}}
+  - -X main.version={{.Env.CONNECT_SERVER_VERSION}}
+- id: grpc-server
+  dir: .
+  main: ./cmd/grpc/server/
+  flags:
+  - -tags
+  - netgo
+  - -trimpath
+  ldflags:
+  - -s -w
+  - -extldflags "-static"
+  - -X main.version={{.Env.GRPC_SERVER_VERSION}}
 - id: grpc-gateway
   dir: .
-  main: ./cmd/gateway/
+  main: ./cmd/grpc/gateway/
   flags:
   - -tags
   - netgo
