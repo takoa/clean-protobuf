@@ -1,11 +1,27 @@
 version: "3"
 
 services:
-  grpc-server:
-    image: "ko.local/server:latest"
+  connect-server:
+    image: "ko.local/github.com/takoa/clean-protobuf/cmd/connect/server:latest"
     ports:
       - "50051:50051"
     environment:
+      - "SERVER_PORT=50051"
+      - "DB_HOST=postgres"
+      - "DB_PORT=5432"
+      - "DB_USER=postgres"
+      - "DB_PASSWORD=password"
+      - "DB_NAME=clean-protobuf"
+      - "DB_SSL_MODE=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  grpc-server:
+    image: "ko.local/github.com/takoa/clean-protobuf/cmd/grpc/server:latest"
+    ports:
+      - "50052:50052"
+    environment:
+      - "SERVER_PORT=50052"
       - "DB_HOST=postgres"
       - "DB_PORT=5432"
       - "DB_USER=postgres"
@@ -16,7 +32,7 @@ services:
       postgres:
         condition: service_healthy
   gateway:
-    image: "ko.local/gateway:latest"
+    image: "ko.local/github.com/takoa/clean-protobuf/cmd/grpc/gateway:latest"
     ports:
       - "8081:8081"
     environment:

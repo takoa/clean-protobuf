@@ -7,10 +7,12 @@ The project layout is based on https://github.com/golang-standards/project-layou
 The architecture is influenced by https://github.com/evrone/go-clean-template, and a little bit https://github.com/Creatly/creatly-backend.
 
 ## Features
-- Clean architecture
-- Protocol Buffers & gRPC
-    - Streaming RPC
+- Protocol Buffers
+    - Connect
+    - gRPC
+    - Streaming
     - REST reverse-proxy
+- Clean architecture
 - PostgreSQL
     - Migration
 - Generics

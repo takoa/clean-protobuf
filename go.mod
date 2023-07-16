@@ -3,6 +3,8 @@ module github.com/takoa/clean-protobuf
 go 1.20
 
 require (
+	github.com/bufbuild/connect-go v1.9.0
+	github.com/bufbuild/connect-grpcreflect-go v1.1.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/golang/protobuf v1.5.3
 	github.com/google/gnostic v0.6.9
@@ -10,6 +12,7 @@ require (
 	github.com/iancoleman/strcase v0.2.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/urfave/cli/v2 v2.25.7
+	golang.org/x/net v0.12.0
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
 	google.golang.org/grpc v1.56.2
@@ -33,7 +36,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.11.0 // indirect

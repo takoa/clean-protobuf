@@ -1,74 +1,56 @@
-package server
+package connect
 
 import (
 	"flag"
 	"fmt"
 	"log"
-	"net"
+	"net/http"
 	"os"
 	"time"
 
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"golang.org/x/xerrors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/takoa/clean-protobuf/api"
+	reflect "github.com/bufbuild/connect-grpcreflect-go"
+	"github.com/takoa/clean-protobuf/api/apiconnect"
 	"github.com/takoa/clean-protobuf/internal/config"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
-	"github.com/takoa/clean-protobuf/internal/infrastructure/controller"
+	"github.com/takoa/clean-protobuf/internal/infrastructure/controller/connect"
 	repositoryimpl "github.com/takoa/clean-protobuf/internal/infrastructure/repository"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
 )
 
 func Serve() error {
 	flag.Parse()
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.Server.Port))
-	if err != nil {
-		return xerrors.Errorf("failed to listen: %w", err)
-	}
 
 	repositories, err := newRepositories()
 	if err != nil {
 		return xerrors.Errorf("failed to create repositories: %w", err)
 	}
 
-	healthCheckServer := health.NewServer()
-	healthCheckServer.SetServingStatus("RouteGuide", grpc_health_v1.HealthCheckResponse_SERVING)
-
-	routeGuideServer, err := controller.NewServer(repositories)
+	routeGuideServer, err := connect.NewServer(repositories)
 	if err != nil {
 		return xerrors.Errorf("failed to initialize the server: %w", err)
 	}
 
-	var opts []grpc.ServerOption
-	if config.Server.UsesTLS {
-		certFile := config.Server.CertFilePath
-		if certFile == "" {
-			log.Fatalf("Cert file not provided")
-		}
-		keyFile := config.Server.KeyFilePath
-		if keyFile == "" {
-			log.Fatalf("Key file not provided")
-		}
-		creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
-		if err != nil {
-			log.Fatalf("Failed to generate credentials: %v", err)
-		}
-		opts = []grpc.ServerOption{grpc.Creds(creds)}
-	}
-	grpcServer := grpc.NewServer(opts...)
-	grpc_health_v1.RegisterHealthServer(grpcServer, healthCheckServer)
-	api.RegisterRouteGuideServer(grpcServer, routeGuideServer)
-	reflection.Register(grpcServer)
+	reflector := reflect.NewStaticReflector("routeguide.RouteGuide")
+	reflect.NewHandlerV1(reflector)
 
-	log.Printf("server listening at %v", lis.Addr())
-	if err := grpcServer.Serve(lis); err != nil {
+	mux := http.NewServeMux()
+	mux.Handle(apiconnect.NewRouteGuideHandler(routeGuideServer))
+	mux.Handle(reflect.NewHandlerV1(reflector))
+	mux.Handle(reflect.NewHandlerV1Alpha(reflector))
+
+	address := fmt.Sprintf(":%d", config.Server.Port)
+	log.Printf("server listening at %v", address)
+	if err := http.ListenAndServe(
+		address,
+		// Use h2c so we can serve HTTP/2 without TLS.
+		h2c.NewHandler(mux, &http2.Server{}),
+	); err != nil {
 		return xerrors.Errorf("failed to serve: %w", err)
 	}
 

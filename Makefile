@@ -14,19 +14,23 @@ PROTOBUF_DIR = ./api
 PROTOBUF_FILE = routeguide.proto
 
 KO_DOCKER_REPO = ko.local
-SERVER_PATH = ./cmd/server
-SERVER_VERSION = v0.0.1
-GATEWAY_PATH = ./cmd/gateway
+CONNECT_SERVER_PATH = ./cmd/connect/server
+CONNECT_SERVER_VERSION = v0.0.1
+GRPC_SERVER_PATH = ./cmd/grpc/server
+GRPC_SERVER_VERSION = v0.0.1
+GATEWAY_PATH = ./cmd/grpc/gateway
 GATEWAY_VERSION = v0.0.1
 
 # Generation
 .PHONY: build-images
 build-images:
 	export KO_DOCKER_REPO=$(KO_DOCKER_REPO)
-	export SERVER_VERSION=$(SERVER_VERSION)
-	ko build --base-import-paths $(SERVER_PATH)
+	export CONNECT_SERVER_VERSION=$(CONNECT_SERVER_VERSION)
+	ko build --preserve-import-paths $(CONNECT_SERVER_PATH)
+	export GRPC_SERVER_VERSION=$(GRPC_SERVER_VERSION)
+	ko build --preserve-import-paths $(GRPC_SERVER_PATH)
 	export GATEWAY_VERSION=$(GATEWAY_VERSION)
-	ko build --base-import-paths $(GATEWAY_PATH)
+	ko build --preserve-import-paths $(GATEWAY_PATH)
 
 .PHONY: create-certs
 create-certs:

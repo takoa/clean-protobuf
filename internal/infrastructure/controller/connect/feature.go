@@ -1,8 +1,9 @@
-package controller
+package connect
 
 import (
 	"context"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/entity/errors"
 	"github.com/takoa/clean-protobuf/internal/entity/model"
@@ -11,8 +12,8 @@ import (
 )
 
 // GetFeature returns the feature at the given point.
-func (s *RouteGuideServer) GetFeature(ctx context.Context, point *api.Point) (*api.Feature, error) {
-	p, err := converter.ToModelPoint(point)
+func (s *RouteGuideServer) GetFeature(ctx context.Context, request *connect.Request[api.Point]) (*connect.Response[api.Feature], error) {
+	p, err := converter.ToModelPoint(request.Msg)
 	if err != nil {
 		return nil, xerrors.Errorf("point: %w", errors.ErrNilArgument)
 	}
@@ -22,19 +23,19 @@ func (s *RouteGuideServer) GetFeature(ctx context.Context, point *api.Point) (*a
 		return nil, xerrors.Errorf("failed to get feature at %v: %w", p, err)
 	}
 
-	return converter.ToGRPCFeature(feature), nil
+	return connect.NewResponse(converter.ToGRPCFeature(feature)), nil
 }
 
 // ListFeatures lists all features contained within the given bounding Rectangle.
-func (s *RouteGuideServer) ListFeatures(rect *api.Rectangle, stream api.RouteGuide_ListFeaturesServer) error {
-	r, err := converter.ToModelRectangle(rect)
+func (s *RouteGuideServer) ListFeatures(ctx context.Context, request *connect.Request[api.Rectangle], stream *connect.ServerStream[api.Feature]) error {
+	r, err := converter.ToModelRectangle(request.Msg)
 	if err != nil {
 		return xerrors.Errorf("rect: %w", errors.ErrNilArgument)
 	}
 	send := func(f *model.Feature) error {
 		return stream.Send(converter.ToGRPCFeature(f))
 	}
-	if err := s.listFeaturesHandler.Invoke(stream.Context(), r, send); err != nil {
+	if err := s.listFeaturesHandler.Invoke(ctx, r, send); err != nil {
 		return err
 	}
 
