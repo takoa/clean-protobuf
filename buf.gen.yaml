@@ -2,25 +2,25 @@ version: v1
 managed:
   enabled: true
   go_package_prefix:
-    default: github.com/takoa/clean-protobuf/api
+    default: github.com/takoa/clean-protobuf/internal/pkg/protobuf
     except:
       - buf.build/googleapis/googleapis
       - buf.build/gnostic/gnostic
 plugins:
   - plugin: buf.build/protocolbuffers/go:v1.31.0
-    out: ./api
+    out: ./internal/pkg/protobuf
     opt: paths=source_relative
   - plugin: buf.build/bufbuild/connect-go:v1.9.0
-    out: ./api
+    out: ./internal/pkg/protobuf
     opt:
       - paths=source_relative
   - plugin: buf.build/grpc/go:v1.3.0
-    out: ./api
+    out: ./internal/pkg/protobuf
     opt:
       - paths=source_relative
   - plugin: buf.build/grpc-ecosystem/gateway:v2.16.0
-    out: ./api
+    out: ./internal/pkg/protobuf
     opt:
       - paths=source_relative
   - plugin: openapi
-    out: ./api
+    out: ./api/routeguide/v1

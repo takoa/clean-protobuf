@@ -1,21 +1,3 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 // Package main implements a simple gRPC server that demonstrates how to use gRPC-Go libraries
 // to perform unary, client streaming, server streaming and full duplex RPCs.
 //
@@ -40,8 +22,8 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/pkg/data"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 )
 
 var (
@@ -53,29 +35,29 @@ var (
 )
 
 type routeGuideServer struct {
-	api.UnimplementedRouteGuideServer
-	savedFeatures []*api.Feature // read-only after initialized
+	routeguidev1.UnimplementedRouteGuideServiceServer
+	savedFeatures []*routeguidev1.Feature // read-only after initialized
 
 	mu         sync.Mutex // protects routeNotes
-	routeNotes map[string][]*api.RouteNote
+	routeNotes map[string][]*routeguidev1.RouteNote
 }
 
 // GetFeature returns the feature at the given point.
-func (s *routeGuideServer) GetFeature(ctx context.Context, point *api.Point) (*api.Feature, error) {
+func (s *routeGuideServer) GetFeature(ctx context.Context, request *routeguidev1.GetFeatureRequest) (*routeguidev1.GetFeatureResponse, error) {
 	for _, feature := range s.savedFeatures {
-		if proto.Equal(feature.Location, point) {
-			return feature, nil
+		if proto.Equal(feature.Location, request.Point) {
+			return &routeguidev1.GetFeatureResponse{Feature: feature}, nil
 		}
 	}
 	// No feature was found, return an unnamed feature
-	return &api.Feature{Location: point}, nil
+	return &routeguidev1.GetFeatureResponse{Feature: &routeguidev1.Feature{Location: request.Point}}, nil
 }
 
 // ListFeatures lists all features contained within the given bounding Rectangle.
-func (s *routeGuideServer) ListFeatures(rect *api.Rectangle, stream api.RouteGuide_ListFeaturesServer) error {
+func (s *routeGuideServer) ListFeatures(request *routeguidev1.ListFeaturesRequest, stream routeguidev1.RouteGuideService_ListFeaturesServer) error {
 	for _, feature := range s.savedFeatures {
-		if inRange(feature.Location, rect) {
-			if err := stream.Send(feature); err != nil {
+		if inRange(feature.Location, request.SearchArea) {
+			if err := stream.Send(&routeguidev1.ListFeaturesResponse{Feature: feature}); err != nil {
 				return err
 			}
 		}
@@ -88,19 +70,21 @@ func (s *routeGuideServer) ListFeatures(rect *api.Rectangle, stream api.RouteGui
 // It gets a stream of points, and responds with statistics about the "trip":
 // number of points,  number of known features visited, total distance traveled, and
 // total time spent.
-func (s *routeGuideServer) RecordRoute(stream api.RouteGuide_RecordRouteServer) error {
+func (s *routeGuideServer) RecordRoute(stream routeguidev1.RouteGuideService_RecordRouteServer) error {
 	var pointCount, featureCount, distance int32
-	var lastPoint *api.Point
+	var lastPoint *routeguidev1.Point
 	startTime := time.Now()
 	for {
-		point, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			endTime := time.Now()
-			return stream.SendAndClose(&api.RouteSummary{
-				PointCount:   pointCount,
-				FeatureCount: featureCount,
-				Distance:     distance,
-				ElapsedTime:  int32(endTime.Sub(startTime).Seconds()),
+			return stream.SendAndClose(&routeguidev1.RecordRouteResponse{
+				RouteSummary: &routeguidev1.RouteSummary{
+					PointCount:   pointCount,
+					FeatureCount: featureCount,
+					Distance:     distance,
+					ElapsedTime:  int32(endTime.Sub(startTime).Seconds()),
+				},
 			})
 		}
 		if err != nil {
@@ -108,41 +92,41 @@ func (s *routeGuideServer) RecordRoute(stream api.RouteGuide_RecordRouteServer) 
 		}
 		pointCount++
 		for _, feature := range s.savedFeatures {
-			if proto.Equal(feature.Location, point) {
+			if proto.Equal(feature.Location, request) {
 				featureCount++
 			}
 		}
 		if lastPoint != nil {
-			distance += calcDistance(lastPoint, point)
+			distance += calcDistance(lastPoint, request.NewPoint)
 		}
-		lastPoint = point
+		lastPoint = request.NewPoint
 	}
 }
 
 // RouteChat receives a stream of message/location pairs, and responds with a stream of all
 // previous messages at each of those locations.
-func (s *routeGuideServer) RouteChat(stream api.RouteGuide_RouteChatServer) error {
+func (s *routeGuideServer) RouteChat(stream routeguidev1.RouteGuideService_RouteChatServer) error {
 	for {
-		in, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-		key := serialize(in.Location)
+		key := serialize(request.NewMessage.Location)
 
 		s.mu.Lock()
-		s.routeNotes[key] = append(s.routeNotes[key], in)
+		s.routeNotes[key] = append(s.routeNotes[key], request.NewMessage)
 		// Note: this copy prevents blocking other clients while serving this one.
 		// We don't need to do a deep copy, because elements in the slice are
 		// insert-only and never modified.
-		rn := make([]*api.RouteNote, len(s.routeNotes[key]))
+		rn := make([]*routeguidev1.RouteNote, len(s.routeNotes[key]))
 		copy(rn, s.routeNotes[key])
 		s.mu.Unlock()
 
 		for _, note := range rn {
-			if err := stream.Send(note); err != nil {
+			if err := stream.Send(&routeguidev1.RouteChatResponse{Message: note}); err != nil {
 				return err
 			}
 		}
@@ -172,7 +156,7 @@ func toRadians(num float64) float64 {
 
 // calcDistance calculates the distance between two points using the "haversine" formula.
 // The formula is based on http://mathforum.org/library/drmath/view/51879.html.
-func calcDistance(p1 *api.Point, p2 *api.Point) int32 {
+func calcDistance(p1 *routeguidev1.Point, p2 *routeguidev1.Point) int32 {
 	const CordFactor float64 = 1e7
 	const R = float64(6371000) // earth radius in metres
 	lat1 := toRadians(float64(p1.Latitude) / CordFactor)
@@ -191,7 +175,7 @@ func calcDistance(p1 *api.Point, p2 *api.Point) int32 {
 	return int32(distance)
 }
 
-func inRange(point *api.Point, rect *api.Rectangle) bool {
+func inRange(point *routeguidev1.Point, rect *routeguidev1.Rectangle) bool {
 	left := math.Min(float64(rect.Lo.Longitude), float64(rect.Hi.Longitude))
 	right := math.Max(float64(rect.Lo.Longitude), float64(rect.Hi.Longitude))
 	top := math.Max(float64(rect.Lo.Latitude), float64(rect.Hi.Latitude))
@@ -206,12 +190,12 @@ func inRange(point *api.Point, rect *api.Rectangle) bool {
 	return false
 }
 
-func serialize(point *api.Point) string {
+func serialize(point *routeguidev1.Point) string {
 	return fmt.Sprintf("%d %d", point.Latitude, point.Longitude)
 }
 
 func newServer() *routeGuideServer {
-	s := &routeGuideServer{routeNotes: make(map[string][]*api.RouteNote)}
+	s := &routeGuideServer{routeNotes: make(map[string][]*routeguidev1.RouteNote)}
 	s.loadFeatures(*jsonDBFile)
 	return s
 }
@@ -237,7 +221,7 @@ func main() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 	grpcServer := grpc.NewServer(opts...)
-	api.RegisterRouteGuideServer(grpcServer, newServer())
+	routeguidev1.RegisterRouteGuideServiceServer(grpcServer, newServer())
 	grpcServer.Serve(lis)
 }
 

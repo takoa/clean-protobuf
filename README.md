@@ -34,7 +34,7 @@ make run-client
 
 ## Layout
 ### `/api`
-The API definition file (like `.proto`), and its generated code.
+The API definition files (like `.proto`).
 
 ### `/assets`
 Non-Go related data. Usually things like images, but here it is test data.
@@ -78,7 +78,7 @@ The database logic. It reads/writes data from/to the databases or alike. The str
 You can have multiple implementation here to support different versions, mocks, different ORMs, anything.
 
 #### `/internal/pkg`
-The internal packages.
+The internal packages. The generated API code resides here.
 
 The packages are independent of the rest of the implementation.
 

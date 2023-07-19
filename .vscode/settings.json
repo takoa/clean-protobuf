@@ -1,0 +1,8 @@
+{
+    "protoc": {
+        "options": [
+            "--proto_path=${workspaceFolder}/api",
+            "--proto_path=${userHome}/.cache/buf/v2/module/buf.build/",
+        ]
+    },
+}

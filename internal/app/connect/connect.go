@@ -16,11 +16,11 @@ import (
 	"gorm.io/gorm/logger"
 
 	reflect "github.com/bufbuild/connect-grpcreflect-go"
-	"github.com/takoa/clean-protobuf/api/apiconnect"
 	"github.com/takoa/clean-protobuf/internal/config"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
 	"github.com/takoa/clean-protobuf/internal/infrastructure/controller/connect"
 	repositoryimpl "github.com/takoa/clean-protobuf/internal/infrastructure/repository"
+	"github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1/routeguidev1connect"
 )
 
 func Serve() error {
@@ -40,7 +40,7 @@ func Serve() error {
 	reflect.NewHandlerV1(reflector)
 
 	mux := http.NewServeMux()
-	mux.Handle(apiconnect.NewRouteGuideHandler(routeGuideServer))
+	mux.Handle(routeguidev1connect.NewRouteGuideServiceHandler(routeGuideServer))
 	mux.Handle(reflect.NewHandlerV1(reflector))
 	mux.Handle(reflect.NewHandlerV1Alpha(reflector))
 

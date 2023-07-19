@@ -9,7 +9,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/takoa/clean-protobuf/api"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,7 +39,7 @@ func Serve() error {
 	// Note: Make sure the gRPC server is running properly and accessible
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	err := api.RegisterRouteGuideHandlerFromEndpoint(ctx, mux, fmt.Sprintf("%s:%d", conf.GRPCServerHost, conf.GRPCServerPort), opts)
+	err := routeguidev1.RegisterRouteGuideServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("%s:%d", conf.GRPCServerHost, conf.GRPCServerPort), opts)
 	if err != nil {
 		return xerrors.Errorf("failed to register handlers: %w", err)
 	}
