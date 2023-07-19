@@ -1,13 +1,13 @@
 package converter
 
 import (
-	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/entity/errors"
 	"github.com/takoa/clean-protobuf/internal/entity/model"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 	"golang.org/x/xerrors"
 )
 
-func ToModelRectangle(r *api.Rectangle) (model.Rectangle, error) {
+func ToModelRectangle(r *routeguidev1.Rectangle) (model.Rectangle, error) {
 	if r == nil {
 		return model.Rectangle{}, xerrors.Errorf("r: %w", errors.ErrNilArgument)
 	}
@@ -27,8 +27,8 @@ func ToModelRectangle(r *api.Rectangle) (model.Rectangle, error) {
 	}, nil
 }
 
-func ToGRPCRectangle(f model.Rectangle) *api.Rectangle {
-	return &api.Rectangle{
+func ToGRPCRectangle(f model.Rectangle) *routeguidev1.Rectangle {
+	return &routeguidev1.Rectangle{
 		Hi: ToGRPCPoint(f.Hi),
 		Lo: ToGRPCPoint(f.Lo),
 	}

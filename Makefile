@@ -62,6 +62,18 @@ generate-db-code:
 		--model-pkg github.com/takoa/clean-protobuf/internal/entity/model \
 		--template-path ./tools/db-code-generator/templates/repository.tmpl
 
+# Linting
+.PHONY: tidy-protobuf
+tidy-protobuf: format-protobuf lint-protobuf
+
+.PHONY: lint-protobuf
+lint-protobuf:
+	buf lint $(PROTOBUF_DIR)
+
+.PHONY: format-protobuf
+format-protobuf:
+	buf format --write $(PROTOBUF_DIR)
+
 # Server Operations
 .PHONY: launch-server
 launch-server:

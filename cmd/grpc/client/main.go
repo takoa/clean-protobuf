@@ -30,8 +30,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/pkg/data"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -45,11 +45,11 @@ var (
 )
 
 // printFeature gets the feature for the given point.
-func printFeature(client api.RouteGuideClient, point *api.Point) {
+func printFeature(client routeguidev1.RouteGuideServiceClient, point *routeguidev1.Point) {
 	log.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	feature, err := client.GetFeature(ctx, point)
+	feature, err := client.GetFeature(ctx, &routeguidev1.GetFeatureRequest{Point: point})
 	if err != nil {
 		log.Fatalf("client.GetFeature failed: %v", err)
 	}
@@ -57,11 +57,11 @@ func printFeature(client api.RouteGuideClient, point *api.Point) {
 }
 
 // printFeatures lists all the features within the given bounding Rectangle.
-func printFeatures(client api.RouteGuideClient, rect *api.Rectangle) {
+func printFeatures(client routeguidev1.RouteGuideServiceClient, rect *routeguidev1.Rectangle) {
 	log.Printf("Looking for features within %v", rect)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	stream, err := client.ListFeatures(ctx, rect)
+	stream, err := client.ListFeatures(ctx, &routeguidev1.ListFeaturesRequest{SearchArea: rect})
 	if err != nil {
 		log.Fatalf("client.ListFeatures failed: %v", err)
 	}
@@ -73,17 +73,17 @@ func printFeatures(client api.RouteGuideClient, rect *api.Rectangle) {
 		if err != nil {
 			log.Fatalf("client.ListFeatures failed: %v", err)
 		}
-		log.Printf("Feature: name: %q, point:(%v, %v)", feature.GetName(),
-			feature.GetLocation().GetLatitude(), feature.GetLocation().GetLongitude())
+		log.Printf("Feature: name: %q, point:(%v, %v)", feature.GetFeature().GetName(),
+			feature.GetFeature().GetLocation().GetLatitude(), feature.GetFeature().GetLocation().GetLongitude())
 	}
 }
 
 // runRecordRoute sends a sequence of points to server and expects to get a RouteSummary from server.
-func runRecordRoute(client api.RouteGuideClient) {
+func runRecordRoute(client routeguidev1.RouteGuideServiceClient) {
 	// Create a random number of random points
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	pointCount := int(r.Int31n(100)) + 2 // Traverse at least two points
-	var points []*api.Point
+	var points []*routeguidev1.Point
 	for i := 0; i < pointCount; i++ {
 		points = append(points, randomPoint(r))
 	}
@@ -95,7 +95,7 @@ func runRecordRoute(client api.RouteGuideClient) {
 		log.Fatalf("client.RecordRoute failed: %v", err)
 	}
 	for _, point := range points {
-		if err := stream.Send(point); err != nil {
+		if err := stream.Send(&routeguidev1.RecordRouteRequest{NewPoint: point}); err != nil {
 			log.Fatalf("client.RecordRoute: stream.Send(%v) failed: %v", point, err)
 		}
 	}
@@ -107,14 +107,14 @@ func runRecordRoute(client api.RouteGuideClient) {
 }
 
 // runRouteChat receives a sequence of route notes, while sending notes for various locations.
-func runRouteChat(client api.RouteGuideClient) {
-	notes := []*api.RouteNote{
-		{Location: &api.Point{Latitude: 0, Longitude: 1}, Message: "First message"},
-		{Location: &api.Point{Latitude: 0, Longitude: 2}, Message: "Second message"},
-		{Location: &api.Point{Latitude: 0, Longitude: 3}, Message: "Third message"},
-		{Location: &api.Point{Latitude: 0, Longitude: 1}, Message: "Fourth message"},
-		{Location: &api.Point{Latitude: 0, Longitude: 2}, Message: "Fifth message"},
-		{Location: &api.Point{Latitude: 0, Longitude: 3}, Message: "Sixth message"},
+func runRouteChat(client routeguidev1.RouteGuideServiceClient) {
+	notes := []*routeguidev1.RouteNote{
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 1}, Message: "First message"},
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 2}, Message: "Second message"},
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 3}, Message: "Third message"},
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 1}, Message: "Fourth message"},
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 2}, Message: "Fifth message"},
+		{Location: &routeguidev1.Point{Latitude: 0, Longitude: 3}, Message: "Sixth message"},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -125,7 +125,7 @@ func runRouteChat(client api.RouteGuideClient) {
 	waitc := make(chan struct{})
 	go func() {
 		for {
-			in, err := stream.Recv()
+			request, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
 				close(waitc)
@@ -134,11 +134,11 @@ func runRouteChat(client api.RouteGuideClient) {
 			if err != nil {
 				log.Fatalf("client.RouteChat failed: %v", err)
 			}
-			log.Printf("Got message %s at point(%d, %d)", in.Message, in.Location.Latitude, in.Location.Longitude)
+			log.Printf("Got message %s at point(%d, %d)", request.Message, request.Message.Location.Latitude, request.Message.Location.Longitude)
 		}
 	}()
 	for _, note := range notes {
-		if err := stream.Send(note); err != nil {
+		if err := stream.Send(&routeguidev1.RouteChatRequest{NewMessage: note}); err != nil {
 			log.Fatalf("client.RouteChat: stream.Send(%v) failed: %v", note, err)
 		}
 	}
@@ -146,10 +146,10 @@ func runRouteChat(client api.RouteGuideClient) {
 	<-waitc
 }
 
-func randomPoint(r *rand.Rand) *api.Point {
+func randomPoint(r *rand.Rand) *routeguidev1.Point {
 	lat := (r.Int31n(180) - 90) * 1e7
 	long := (r.Int31n(360) - 180) * 1e7
-	return &api.Point{Latitude: lat, Longitude: long}
+	return &routeguidev1.Point{Latitude: lat, Longitude: long}
 }
 
 func main() {
@@ -173,18 +173,18 @@ func main() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 	defer conn.Close()
-	client := api.NewRouteGuideClient(conn)
+	client := routeguidev1.NewRouteGuideServiceClient(conn)
 
 	// Looking for a valid feature
-	printFeature(client, &api.Point{Latitude: 409146138, Longitude: -746188906})
+	printFeature(client, &routeguidev1.Point{Latitude: 409146138, Longitude: -746188906})
 
 	// Feature missing.
-	printFeature(client, &api.Point{Latitude: 0, Longitude: 0})
+	printFeature(client, &routeguidev1.Point{Latitude: 0, Longitude: 0})
 
 	// Looking for features between 40, -75 and 42, -73.
-	printFeatures(client, &api.Rectangle{
-		Lo: &api.Point{Latitude: 400000000, Longitude: -750000000},
-		Hi: &api.Point{Latitude: 420000000, Longitude: -730000000},
+	printFeatures(client, &routeguidev1.Rectangle{
+		Lo: &routeguidev1.Point{Latitude: 400000000, Longitude: -750000000},
+		Hi: &routeguidev1.Point{Latitude: 420000000, Longitude: -730000000},
 	})
 
 	// RecordRoute

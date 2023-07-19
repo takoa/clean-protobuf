@@ -1,16 +1,16 @@
 package controller
 
 import (
-	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
 	"github.com/takoa/clean-protobuf/internal/infrastructure/controller/protobuf"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 	"github.com/takoa/clean-protobuf/internal/usecase/feature"
 	"github.com/takoa/clean-protobuf/internal/usecase/route"
 	"golang.org/x/xerrors"
 )
 
 type RouteGuideServer struct {
-	api.UnimplementedRouteGuideServer
+	routeguidev1.UnimplementedRouteGuideServiceServer
 
 	getFeatureHandler   *protobuf.GetFeatureHandler
 	listFeaturesHandler *protobuf.ListFeaturesHandler

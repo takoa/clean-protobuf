@@ -15,11 +15,11 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/takoa/clean-protobuf/api"
 	"github.com/takoa/clean-protobuf/internal/config"
 	"github.com/takoa/clean-protobuf/internal/entity/repository"
 	routeguidegrpc "github.com/takoa/clean-protobuf/internal/infrastructure/controller/grpc"
 	repositoryimpl "github.com/takoa/clean-protobuf/internal/infrastructure/repository"
+	routeguidev1 "github.com/takoa/clean-protobuf/internal/pkg/protobuf/routeguide/v1"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
@@ -64,7 +64,7 @@ func Serve() error {
 	}
 	grpcServer := grpc.NewServer(opts...)
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthCheckServer)
-	api.RegisterRouteGuideServer(grpcServer, routeGuideServer)
+	routeguidev1.RegisterRouteGuideServiceServer(grpcServer, routeGuideServer)
 	reflection.Register(grpcServer)
 
 	log.Printf("server listening at %v", lis.Addr())

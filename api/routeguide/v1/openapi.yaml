@@ -12,7 +12,7 @@ paths:
     /v1/features:
         get:
             tags:
-                - RouteGuide
+                - RouteGuideService
             description: |-
                 A server-to-client streaming RPC.
 
@@ -20,24 +20,24 @@ paths:
                  streamed rather than returned at once (e.g. in a response message with a
                  repeated field), as the rectangle may cover a large area and contain a
                  huge number of features.
-            operationId: RouteGuide_ListFeatures
+            operationId: RouteGuideService_ListFeatures
             parameters:
-                - name: lo.latitude
+                - name: searchArea.lo.latitude
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: lo.longitude
+                - name: searchArea.lo.longitude
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: hi.latitude
+                - name: searchArea.hi.latitude
                   in: query
                   schema:
                     type: integer
                     format: int32
-                - name: hi.longitude
+                - name: searchArea.hi.longitude
                   in: query
                   schema:
                     type: integer
@@ -48,17 +48,17 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Feature'
+                                $ref: '#/components/schemas/ListFeaturesResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/features/{latitude}/{longitude}:
+    /v1/features/{point.latitude}/{point.longitude}:
         get:
             tags:
-                - RouteGuide
+                - RouteGuideService
             description: |-
                 A simple RPC.
 
@@ -66,17 +66,25 @@ paths:
 
                  A feature with an empty name is returned if there's no feature at the given
                  position.
-            operationId: RouteGuide_GetFeature
+            operationId: RouteGuideService_GetFeature
             parameters:
-                - name: latitude
+                - name: point.latitude
                   in: path
                   required: true
                   schema:
-                    type: integer
-                    format: int32
-                - name: longitude
+                    type: string
+                - name: point.longitude
                   in: path
                   required: true
+                  schema:
+                    type: string
+                - name: point.latitude
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: point.longitude
+                  in: query
                   schema:
                     type: integer
                     format: int32
@@ -86,7 +94,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Feature'
+                                $ref: '#/components/schemas/GetFeatureResponse'
                 default:
                     description: Default error response
                     content:
@@ -104,6 +112,11 @@ components:
                 location:
                     $ref: '#/components/schemas/Point'
             description: A feature names something at a given point. If a feature could not be named, the name is empty.
+        GetFeatureResponse:
+            type: object
+            properties:
+                feature:
+                    $ref: '#/components/schemas/Feature'
         GoogleProtobufAny:
             type: object
             properties:
@@ -112,6 +125,11 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListFeaturesResponse:
+            type: object
+            properties:
+                feature:
+                    $ref: '#/components/schemas/Feature'
         Point:
             type: object
             properties:
@@ -139,4 +157,4 @@ components:
                     description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
             description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
 tags:
-    - name: RouteGuide
+    - name: RouteGuideService
